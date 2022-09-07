@@ -1,0 +1,114 @@
+---
+title: "results"
+author: "Yuta Suzuki"
+date: '2022-05-23'
+output: html_document
+---
+
+
+### PSE
+The probabilities with which the participants chose ‘ahead’ (i.e., the answer of right for LVF and of left for RVF) were averaged in each SOA (Figure 1B). The average probability of each participant (N= 65) was fit with a psychometric function which implements the maximum-likelihood method. The PSE was estimated by the value with a probability of 0.5. Eight participants' data were rejected from the statistical analysis due to a failure of the fitting or a large bias of averaged gaze fixation position (> 4.5°). We observed the presence of a flash-lag effect in both visual fields 
+(LVF: $t$(1, `r anovaTabAll$PSE_table$left$parameter`) = `r round(anovaTabAll$PSE_table$left$statistic,3)`, 
+$p$ = `r round(anovaTabAll$PSE_table$left$p.value,3)`, 
+Cohen’s  $d$ = `r anovaTabAll$PSE_table$left_cohend`, 
+$BF_{10}$ =  `r round(anovaTabAll$PSE_table$left_bf,3)`;
+RVF: $t$(1, `r anovaTabAll$PSE_table$right$parameter`) = `r round(anovaTabAll$PSE_table$right$statistic,3)`, 
+$p$ = `r round(anovaTabAll$PSE_table$right$p.value,3)`, 
+Cohen’s  $d$ = `r anovaTabAll$PSE_table$right_cohend`, 
+$BF_{10}$ =  `r round(anovaTabAll$PSE_table$right_bf,3)`). 
+The point of subjective equality (PSE) in each visual field was first bootstrapped 2000 times to estimate the mean and confidence interval (Figure 1C). The lag effect was significantly larger in the LVF than the RVF 
+($t$(1, `r anovaTabAll$PSE_table$anovaTab$parameter`) = `r round(anovaTabAll$PSE_table$anovaTab$statistic,3)`, 
+$p$ = `r round(anovaTabAll$PSE_table$anovaTab$p.value,3)`, 
+Cohen’s  $d$ = `r anovaTabAll$PSE_table$cohend`, 
+$BF_{10}$ =  `r round(anovaTabAll$PSE_table$bf,3)`), consistent with previous studies 
+
+### RT
+Response times (RTs) were calculated from the time of flash stimulus presentation to the participants’ key presses. 
+We tested second-order polynomials fitting (i.e., a $\neq$ 0) and monotonic fitting (i.e., a = 0) as Models 1 and 2 (see Method) to estimate the relationships between SOA and RTs using a least squares method. 
+The solid lines show the model which more likely well explains the data determined by AIC. 
+A two-way repeated measures ANOVA on the RTs in SOA and VF conditions revealed a significant main effect on SOA 
+($F$(`r round(anovaTabAll$RT_table$anovaTab[2,]['df.col'],3)`,
+`r round(anovaTabAll$RT_table$anovaTab[3,]['df.col'],3)`) =
+`r round(anovaTabAll$RT_table$anovaTab[2,]['f.col'],3)`,
+p = `r round(anovaTabAll$RT_table$anovaTab[2,]['p.col'],3)`,
+$\eta^2_p$ =  `r round(anovaTabAll$RT_table$anovaTab[2,]['p.eta^2'],3)`,
+$BF_{10}$ =  `r round(anovaTabAll$RT_table$bf[1],3)`).
+RTs at the SOA of -33.3 ms were slower than those of -66.7, -83.3, and 33.3 ms (p < 0.05), consistent with the FLE. 
+Although the FLI in RT seemed larger in the LVF, there were no significant main effect on VF 
+($F$(`r round(anovaTabAll$RT_table$anovaTab[4,]['df.col'],3)`,
+`r round(anovaTabAll$RT_table$anovaTab[5,]['df.col'],3)`) =
+`r round(anovaTabAll$RT_table$anovaTab[4,]['f.col'],3)`,
+p = `r round(anovaTabAll$RT_table$anovaTab[4,]['p.col'],3)`,
+$\eta^2_p$ =  `r round(anovaTabAll$RT_table$anovaTab[4,]['p.eta^2'],3)`;
+$BF_{10}$ =  `r round(anovaTabAll$RT_table$bf[2],3)`)
+or interaction between SOA and VF 
+($F$(`r round(anovaTabAll$RT_table$anovaTab[6,]['df.col'],3)`,
+`r round(anovaTabAll$RT_table$anovaTab[7,]['df.col'],3)`) =
+`r round(anovaTabAll$RT_table$anovaTab[6,]['f.col'],3)`,
+p = `r round(anovaTabAll$RT_table$anovaTab[6,]['p.col'],3)`,
+$\eta^2_p$ =  `r round(anovaTabAll$RT_table$anovaTab[6,]['p.eta^2'],3)`,
+$BF_{10}$ =  `r round(anovaTabAll$RT_table$bf[4]/anovaTabAll$RT_table$bf[3],3)`).
+
+### Gaze fixation
+To assess whether the gaze fixation bias across VFs relates to the FLI anisotropy, we counted gaze fixations and calculated the histograms of x coordinate to compare the gaze bias (Figure 2A). Since participants were requested to fixate the central fixation cross, the 
+histogram should ideally show a normal distribution with an average of center monitor coordinates. However, the distributions in both VFs were skewed toward the VF where the stimulus was presented. However, the median value in gaze displacements within each VFs was not significant, as shown in Figure 2B 
+($t$(1, `r anovaTabAll$gaze_table$anovaTab$parameter`) = `r round(anovaTabAll$gaze_table$anovaTab$statistic,3)`,
+$p$ = `r round(anovaTabAll$gaze_table$anovaTab$p.value,3)`,
+Cohen’s  $d$ = `r anovaTabAll$gaze_table$cohen_d`,
+$BF_{10}$ =  `r round(anovaTabAll$gaze_table$bf,3)`)), 
+indicating that these small biases in gaze fixations were unlikely to account for the FLI anisotropy.
+
+### Pupil changes in each VFs and lags
+Next, we compared the pupillary changes time-locked to the task onset to assess differences across VFs. Figure 3A illustrates the response-locked pupil changes from the baseline period to 2 s after the response across participants and SOA. Phasic pupil dilation was likely associated with the button response in both VF conditions. Figure 3B shows the grand-averaged pupil change across participants after the task response. A Two-way repeated-measures ANOVA on the pupillary changes in SOA and VF conditions revealed a significant main effect of VFs 
+($F$(`r round(anovaTabAll$phasicPupil_table$anovaTab[2,]['df.col'],3)`,
+`r round(anovaTabAll$phasicPupil_table$anovaTab[3,]['df.col'],3)`) =
+`r round(anovaTabAll$phasicPupil_table$anovaTab[2,]['f.col'],3)`,
+p = `r round(anovaTabAll$phasicPupil_table$anovaTab[2,]['p.col'],3)`,
+$\eta^2_p$ =  `r round(anovaTabAll$phasicPupil_table$anovaTab[2,]['p.eta^2'],3)`,
+$BF_{10}$ =  `r round(anovaTabAll$phasicPupil_table$bf[1],3)`), 
+indicating that the pupillary changes in the RVF were larger than in the LVF. 
+There was also a significant main effect of SOA
+($F$(`r round(anovaTabAll$phasicPupil_table$anovaTab[4,]['df.col'],3)`,
+`r round(anovaTabAll$phasicPupil_table$anovaTab[5,]['df.col'],3)`) =
+`r round(anovaTabAll$phasicPupil_table$anovaTab[4,]['f.col'],3)`,
+p = `r round(anovaTabAll$phasicPupil_table$anovaTab[4,]['p.col'],3)`,
+$\eta^2_p$ =  `r round(anovaTabAll$phasicPupil_table$anovaTab[4,]['p.eta^2'],3)`;
+$BF_{10}$ =  `r round(anovaTabAll$phasicPupil_table$bf[2],3)`).
+However, there was no significant interaction 
+($F$(`r round(anovaTabAll$phasicPupil_table$anovaTab[6,]['df.col'],3)`,
+`r round(anovaTabAll$phasicPupil_table$anovaTab[7,]['df.col'],3)`) =
+`r round(anovaTabAll$phasicPupil_table$anovaTab[6,]['f.col'],3)`,
+p = `r round(anovaTabAll$phasicPupil_table$anovaTab[6,]['p.col'],3)`,
+$\eta^2_p$ =  `r round(anovaTabAll$phasicPupil_table$anovaTab[6,]['p.eta^2'],3)`,
+$BF_{10}$ =  `r round(anovaTabAll$phasicPupil_table$bf[4]/anovaTabAll$phasicPupil_table$bf[3],3)`).
+
+Figure 3C shows the velocity of the pupil change across participants after the task response. This indicates that there were faster changes in returning to the baseline level in the LVF than in the RVF, with marginal significance but relatively strong evidence for H1 from the bayes factor 
+($F$(`r round(anovaTabAll$phasicPupilVel_table$anovaTab[2,]['df.col'],3)`,
+`r round(anovaTabAll$phasicPupilVel_table$anovaTab[3,]['df.col'],3)`) =
+`r round(anovaTabAll$phasicPupilVel_table$anovaTab[2,]['f.col'],3)`,
+p = `r round(anovaTabAll$phasicPupilVel_table$anovaTab[2,]['p.col'],3)`,
+$\eta^2_p$ =  `r round(anovaTabAll$phasicPupilVel_table$anovaTab[2,]['p.eta^2'],3)`,
+$BF_{10}$ =  `r round(anovaTabAll$phasicPupilVel_table$bf[1],3)`).
+However, there were no significant main effect of SOA and its interaction 
+($F$(`r round(anovaTabAll$phasicPupilVel_table$anovaTab[4,]['df.col'],3)`,
+`r round(anovaTabAll$phasicPupilVel_table$anovaTab[5,]['df.col'],3)`) =
+`r round(anovaTabAll$phasicPupilVel_table$anovaTab[4,]['f.col'],3)`,
+p = `r round(anovaTabAll$phasicPupilVel_table$anovaTab[4,]['p.col'],3)`,
+$\eta^2_p$ =  `r round(anovaTabAll$phasicPupilVel_table$anovaTab[4,]['p.eta^2'],3)`;
+$BF_{10}$ =  `r round(anovaTabAll$phasicPupilVel_table$bf[2],3)`; 
+$F$(`r round(anovaTabAll$phasicPupilVel_table$anovaTab[6,]['df.col'],3)`,
+`r round(anovaTabAll$phasicPupilVel_table$anovaTab[7,]['df.col'],3)`) =
+`r round(anovaTabAll$phasicPupilVel_table$anovaTab[6,]['f.col'],3)`,
+p = `r round(anovaTabAll$phasicPupilVel_table$anovaTab[6,]['p.col'],3)`,
+$\eta^2_p$ =  `r round(anovaTabAll$phasicPupilVel_table$anovaTab[6,]['p.eta^2'],3)`,
+$BF_{10}$ =  `r round(anovaTabAll$phasicPupilVel_table$bf[4]/anovaTabAll$phasicPupilVel_table$bf[3],3)`).
+
+
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE, results='asis'}
+
+cormat = cormat[2:6,1:5]
+cat('\n\n<!-- -->\n\n')
+print(kable(cormat, format = "markdown", digits = 3, row.names = NA))
+cat('\n\n<!-- -->\n\n')
+```

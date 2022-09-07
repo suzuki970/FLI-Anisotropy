@@ -1,0 +1,1500 @@
+---
+title: "Figures' note for FLI-Anistropy"
+author: "Yuta Suzuki"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  word_document:
+    toc: true
+    reference_docx: doc_templete.docx
+  # slidy_presentation:
+    # pdf_document:
+    # css: style.css
+---
+
+# Article information
+
+Yuta Suzuki$^1$, Sumeyya Atmaca$^2$, Bruno Laeng$^2$
+
+$^1$ NTT Communication Science Laboratories, NTT Corporation, Atsugi 243-0198, Japan
+
+$^2$ University of Oslo, Department of Psychology
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE, echo=FALSE,warning=FALSE,include=FALSE}
+
+g1 = c(-83.3,-66.7,-50.0,-33.3,-16.7,0,16.7,33.3)
+g2 = c("Small","Large","")
+vFieldName = c('RVF','LVF')
+
+tGroup = c(-2,-0.5,0,0.55,2.55,3.12)
+binName = c("fixation","baseline","moving object","response","ISI")
+
+correctFig = T
+nsFlag = T
+saveFig = T
+
+#### file loading
+
+rootFolder = "../[Python]PreProcessing/data/"
+
+folderName = list.files(rootFolder, full.names=T)
+folderName = folderName[length(folderName)]
+
+date = unlist(strsplit(folderName,"/"))
+date = date[length(date)]
+
+dataFolder = paste0("./data/",date,"/")
+saveFolder = paste0("./figure/",date,"/")
+
+cfg = fromJSON(file=paste0(rootFolder,date,"/cfg_norm.json"))
+
+WIN_ANALYSIS = round(cfg$WID_ANALYSIS,2)
+
+sTime = cfg$WID_BASELINE[[1]][1]
+eTime = round(cfg$WID_ANALYSIS,2)
+
+numOfTertile = cfg$numOfTertile
+normFlg = cfg$normFlag
+
+
+if(!dir.exists(saveFolder)){
+  dir.create(saveFolder)
+}
+
+if(!dir.exists(paste0("./JASP/",date))){
+  dir.create(paste0("./JASP/",date))
+}
+
+if(normFlg){
+  normName="_norm"
+  unitName = "[z]"
+}else{
+  normName="_mm"
+  unitName = "[mm]"
+}
+
+# average -----------------------------------------------------------------
+if(!file.exists(dataFolder)){
+  source("makeDataSet.R")
+}else{
+  f = list.files(paste0("./data/",date), pattern="dataset", full.names=T)
+  for(fName in f){
+    load(fName)
+  }
+}
+
+anovaTabAll = list()
+p_all = list()
+
+```
+
+\newpage
+
+```{r child="methods.Rmd"}
+```
+
+\newpage
+
+# Results
+
+## Behavioral data
+
+### PSE
+```{r, message=FALSE, warning=FALSE, echo=FALSE, include=FALSE}
+
+countFigNum = 1
+
+config = list(
+  label_x = 'SOA[ms]',
+  label_y = "Answer of 'ahead'",
+  line = F
+)
+
+# PSE curve (average)-------------------------------------------------------------------
+# config$grCol = c("#000000",rev(rainbow_hcl(30, c=100)))
+config$grCol = c("#D97168","#738CD9")
+
+dat_th$y=0.1
+dat_th[dat_th$vField=="LVF",]$y=0.3
+
+psyCurves = data.frame(
+  vField = fit_VFs$curves$vField,
+  x = fit_VFs$curves$x,
+  y = fit_VFs$curves$y
+)
+
+tmp_plot = aggregate( . ~ sub*SOA*vField, data = ind_task_data, FUN = "mean")
+
+tmp_plot[tmp_plot$vField == "LVF",]$SOA = tmp_plot[tmp_plot$vField == "LVF",]$SOA - 2
+tmp_plot[tmp_plot$vField == "RVF",]$SOA = tmp_plot[tmp_plot$vField == "RVF",]$SOA + 2
+
+p_all$pseAverage = dispLineGraph(tmp_plot,config, "Task", c("SOA","vField"))+
+  geom_hline(yintercept=0.5, colour="black", linetype="solid", size = 0.1)+
+  geom_segment(data = dat_th,
+               aes(x = th,xend = th),
+               y = 0, yend = 0.5, linetype="dashed",size=0.1)+
+  geom_text(data = dat_th, 
+            aes(x = 8, y = y,
+                label=paste0('PSE = ',round(th,digits = 1))),size = 3) +
+  geom_line(data=psyCurves,
+            aes(x=x,y=y,group = vField),
+            alpha=0.5,size=0.2)+
+  ggtitle(paste0('     Probability'))+
+  ylim(c(0,1))+
+  scale_x_continuous(breaks = unique(ind_task_data$SOA), expand = c(0.05, 0.05))
+
+config$ylim = round(seq(0,1,0.25),4)
+config$ylim_stride = 0.05
+config$xlim = unique(data_e1$SOA)
+config$xlim_stride = 5
+
+p_all$pseAverage = setEmptyStyle(p_all$pseAverage,config)
+
+p_all$pseAverage <- p_all$pseAverage + theme(
+  legend.position = 'none',
+  axis.text.x = element_text(angle = 30, hjust = 1)
+)
+
+p_all$pseAverage$size = c(4.5,5)
+
+
+# PSE (threshold) -------------------------------------------------------------------
+
+config$title="     Probability"
+x = dat_th_ind[dat_th_ind$vField == "LVF",]$th
+y = dat_th_ind[dat_th_ind$vField == "RVF",]$th
+n = length(x)
+bf = ttestBF(x = x, y = y, paired=TRUE)
+
+sig = t.test(x,y,var.equal=T,paired=T)
+print(paste0("averaged PSE was ",round(mean(x),2), " for LVF and ",round(mean(y),2),"for RVF"))
+
+sigPair = NULL
+sigPair = cbind(sigPair,"LVF")
+sigPair = cbind(sigPair,"<")
+sigPair = cbind(sigPair,"RVF")
+sigPair = cbind(sigPair,sig[["p.value"]])
+
+p = dispLineGraph(dat_th_ind,config,"th",c("vField"))
+
+p <- drawSignificance(p,sigPair,-17,0.05,nsFlag)
+
+config$ylim = round(seq(-35,-15,5),4)
+config$ylim_stride = 0.5
+config$xlim = round(seq(1,2,1),4)
+config$xlim_stride = 0.5
+
+p = setEmptyStyle(p,config)
+
+p = p + theme(
+  legend.position = 'none'
+)
+
+p_all$pseThre = p
+
+LVF_sig = t.test(x, mu = 0)
+LVF_bf  = ttestBF(x = x, mu = 0)
+RVF_sig = t.test(y, mu = 0)
+RVF_bf = ttestBF(x = y, mu = 0)
+
+PSE_table = list(list(
+  anovaTab = sig,
+  cohend   = abs(round(sig[["statistic"]][["t"]] / sqrt(n),3)),
+  bf       = round(exp(bf@bayesFactor[["bf"]]),3),
+  left     = LVF_sig,
+  left_bf  = round(exp(LVF_bf@bayesFactor[["bf"]]),3),
+  left_cohend = abs(round(LVF_sig[["statistic"]][["t"]] / sqrt(n),3)),
+  right    = RVF_sig,
+  right_bf = round(exp(RVF_bf@bayesFactor[["bf"]]),3),
+  right_cohend = abs(round(RVF_sig[["statistic"]][["t"]] / sqrt(n),3))
+))
+names(PSE_table) <- c('PSE_table')
+
+anovaTabAll = c(anovaTabAll,PSE_table)
+
+# PSE curve (ind) -------------------------------------------------------------------
+
+dat_th_ind$y=0.1
+dat_th_ind[dat_th_ind$vField=="RVF",]$y=0.3
+
+p <- ggplot(data_e1_keep, aes(x=SOA,y=Task)) +
+  geom_point(aes(group = sub, color=vField))+
+  ggtitle(paste0('       Probability'))+
+  geom_line(data=psyCurves_ind_keep,
+            aes(x=x,y=y,group = vField,color=vField),
+            size=0.5)+
+  ylab(config$label_y) + xlab(config$label_x)+
+  ylim(c(0,1))+
+  scale_x_continuous(breaks = unique(data_e1$SOA), expand = c(0.05, 0.05))+
+  facet_wrap(sub ~ .)
+
+config$ylim = round(seq(0,1,0.25),4)
+config$ylim_stride = 0.05
+config$xlim = unique(data_e1$SOA)
+config$xlim_stride = 5
+
+p = setEmptyStyle(p,config)
+
+p <- p + theme(
+  legend.position = 'none',
+  axis.text.x = element_text(angle = 30, hjust = 1)
+)
+
+p_all$pseSub = p
+
+# bootstrap -------------------------------------------------------------------
+
+title = paste0("95% CI[",round(fit_VFs$thresholdcomparisons$difinf,3),",",round(fit_VFs$thresholdcomparisons$difsup,3),"]")
+
+p = ggplot(fit_VFs$thresholdsbootstrap,
+           aes(x=thre,
+               group=interaction(vField),
+               fill=interaction(vField)))+
+  geom_density(alpha=.2,outline.type="full")+
+  scale_fill_manual(values = config$grCol)+
+  xlab("PSE[ms]")+
+  ylab("density")+
+  ggtitle(title)+
+  theme(
+    legend.justification=c(0,1), legend.position=c(0,1)
+  )+
+  geom_point(aes(x=mean(fit_VFs$thresholdsbootstrap[fit_VFs$thresholdsbootstrap$vField == "LVF",]$thre),
+                 y=0.43),shape=6,size=6,color=config$grCol[1])+
+  geom_point(aes(x=mean(fit_VFs$thresholdsbootstrap[fit_VFs$thresholdsbootstrap$vField == "RVF",]$thre),
+                 y=0.43),shape=6,size=6,color=config$grCol[2])
+
+
+config$ylim = round(seq(0,0.5,0.1),4)
+config$ylim_stride = 0.01
+config$xlim = round(seq(-35,-15,5),4)
+config$xlim_stride = 0.5
+
+p = setEmptyStyle(p,config)
+
+p_all$pseBootstrap = p
+p_all$pseBootstrap$size = c(4.5,5)
+
+```
+
+<!-- Psychometric curve measuring the flash lag effect. -->
+
+### RT
+```{r, message=FALSE, warning=FALSE, echo=FALSE, include=FALSE}
+countFigNum = 1
+# config$grCol = c("gray30")
+
+# RT ----------------------------------------------------------------------
+config$grCol = c("#D97168","#738CD9")
+data_RT_anova = ind_data
+data_RT_anova = data_RT_anova[data_RT_anova$RT > 0 & data_RT_anova$RT < 3000,]
+# data_RT_anova = rejectOutlier(data_RT_anova,"RT")
+
+data_RT_anova =  aggregate( RT ~ sub*SOA*vField, data = data_RT_anova, FUN = "mean")
+
+model1 <- deriv(~b0+b1*x, namevec = c("b0","b1"), function.arg = c("x","b0","b1"))
+model2 <- deriv(~b0+b1*x+b2*x^2, namevec = c("b0","b1","b2"), function.arg = c("x","b0","b1","b2"))
+
+data_curve = data.frame()
+for (ivField in unique(data_RT_anova$vField)){
+  
+  candi_model1 <- nlmer( RT ~ model1(SOA,b0,b1)~(b0|sub), data_RT_anova[data_RT_anova$vField == ivField,], start = c(b0 = 0, b1 = 0))
+  candi_model2 <- nlmer( RT ~ model2(SOA,b0,b1,b2) ~ (b0|sub), data_RT_anova[data_RT_anova$vField == ivField,], start = c(b0 = 0, b1 = 0, b2=0) )
+ 
+  if (AIC(candi_model1) > AIC(candi_model2)){
+    model = candi_model2
+    m = function(model,x){return(fixef(model)[1] + fixef(model)[2]*x + fixef(model)[3]*x^2)}
+    tVal = summary(candi_model2)[["coefficients"]]["b2",]["t value"]
+  }else{
+    model = candi_model1
+    m = function(model,x){return(fixef(model)[1] + fixef(model)[2]*x)}
+    tVal = summary(candi_model2)[["coefficients"]]["b1",]["t value"]
+  }
+  
+  df <- data.frame(x = seq(-83.3, 33.3, length = 1000))
+  tmp = data.frame(
+    x = df$x,
+    # yy = predict(model, df),
+    yy = m(candi_model2, x = seq(-83.3, 33.3, length = 1000)),
+    b = fixef(model)[length(fixef(model))],
+    t = tVal,
+    vField = ivField
+  )
+  data_curve = rbind(data_curve,tmp)
+}
+
+tmp_plot = data_RT_anova
+tmp_plot[tmp_plot$vField == "LVF",]$SOA = tmp_plot[tmp_plot$vField == "LVF",]$SOA - 2
+tmp_plot[tmp_plot$vField == "RVF",]$SOA = tmp_plot[tmp_plot$vField == "RVF",]$SOA + 2
+
+tmp_plot_weight =  aggregate( . ~ vField, data = data_curve, FUN = "mean")
+
+p = dispLineGraph(tmp_plot,config, "RT", c("SOA","vField")) +
+  geom_line(data = data_curve, aes(x=x,y=yy)) +
+  ylab("RT [ms]") +
+  ggtitle('----- RT') +
+   geom_text(data = tmp_plot_weight, 
+            aes(x = 8, y = 930,
+                label=paste0('beta = ',round(b,digits = 4),',t = ',round(t,digits = 4))),
+            position=position_jitter(width=0,height=-20),size = 3) +
+  scale_x_continuous(breaks = unique(data_e1$SOA), expand = c(0.05, 0.05))
+# facet_grid(. ~ vField)
+
+config$xlim = round(seq(-83.3, 33.3,length=8),4)
+config$xlim_stride = 5
+config$ylim = round(seq(900,1100,100),4)
+config$ylim_stride = 10
+
+p = setEmptyStyle(p,config)
+
+p <- p + 
+  scale_x_continuous(breaks=g1)+
+  theme(
+    legend.position = 'none',
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+
+p_all$RT = p
+p_all$RT$size = c(4.5,5)
+
+anovakun(data_RT_anova,"sAB",long=T, peta=T)
+tableRT = forDrawingSigANOVA
+
+data_RT_anova$SOA = factor(data_RT_anova$SOA,levels = unique(data_RT_anova$SOA))
+data_RT_anova$vField = factor(data_RT_anova$vField,levels = unique(data_RT_anova$vField))
+data_RT_anova$sub = factor(data_RT_anova$sub,levels = unique(data_RT_anova$sub))
+
+tableRT_bf = anovaBF(RT ~ SOA*vField + sub, data=data_RT_anova, whichRandom = "sub")
+
+RT_table = list(list(
+  anovaTab = forDrawingSigANOVA,
+  bf       = round(exp(tableRT_bf@bayesFactor[["bf"]]),3)
+))
+names(RT_table) <- c('RT_table')
+
+anovaTabAll = c(anovaTabAll,RT_table)
+
+```
+
+## Task-related pupillary change
+```{r, message=FALSE, warning=FALSE, echo=FALSE, include=FALSE}
+
+countFigNum = 1
+
+#### file loading
+config <- list(lim_x = c(sTime,eTime),
+               # lim_y = c(4,6),
+               lim_y = c(-0.05,0.5),
+               alpha = 0.1,
+               stride = 0.1,
+               label_x = "Time [sec]",
+               label_y = paste0("Pupil size",unitName),
+               title = "averaged across VFs",
+               linetype = FALSE,
+               line = F
+)
+
+# Time-course of pupillary response --------------------------------------------------
+config$grCol = NULL
+data_pupil_timeCourse =  aggregate( PDR ~ sub*data_x*vField*SOA, data = data_pupil, FUN = "mean")
+
+p <- disp(data_pupil_timeCourse,config,"PDR",1,c("SOA","vField"))+
+  facet_grid(. ~ vField)+
+  ggtitle("each VF and lags")+
+  geom_vline(xintercept=0.5, color="gray", linetype="dashed")+
+  geom_vline(xintercept=0, color="gray", linetype="solid")
+
+config$xlim = c(sTime,round(seq(0,eTime,0.5),4))
+config$xlim_stride = 0.05
+if(normFlg){
+  config$ylim = round(seq(-0.1,0.8,0.1),4)
+  config$ylim_stride = 0.02
+}else{
+  config$ylim = round(seq(-0.05,0.3,0.05),4)
+  config$ylim_stride = 0.005
+}
+
+p = setEmptyStyle(p,config)
+p = p + scale_x_continuous(breaks=config$xlim)
+theme(
+  axis.text.x = element_text(angle = 30, hjust = 1)
+)
+
+p_all$pupilTimeCourse = p
+
+# Average ------------------------------------------------------------
+config$grCol = c("#D97168","#738CD9")
+
+data_pupilAve = data_pupil[data_pupil$data_x > 0 & data_pupil$data_x < WIN_ANALYSIS,]
+data_pupilAve = aggregate( PDR ~ sub*vField*SOA, data = data_pupil, FUN = "mean")
+
+# Time-course of corr. with RT ----------------------------------
+
+data_pupilAve = aggregate( PDR ~ sub*vField, data = data_pupil, FUN = "mean")
+
+### trial at more than 3000ms is rejected
+data_RT_anova = ind_data[ind_data$RT > 0 & ind_data$RT < 3000,]
+data_RT_anova =  aggregate( RT ~ sub*vField, data = data_RT_anova, FUN = "mean")
+
+data_RT_diff = data_RT_anova[data_RT_anova$vField == "RVF",]$RT - data_RT_anova[data_RT_anova$vField == "LVF",]$RT
+th_diff = dat_th_ind[dat_th_ind$vField == "RVF",]$th - dat_th_ind[dat_th_ind$vField == "LVF",]$th
+
+dat_corr = data.frame()
+for(x in unique(data_pupil$data_x)){
+  tmp = data_pupil[data_pupil$data_x == x,]
+  tmp_diff = tmp[tmp$vField == "RVF",]$PDR - tmp[tmp$vField == "LVF",]$PDR
+  tmp = tmp[tmp$vField == "RVF",]
+
+  tmp$RT = data_RT_diff
+  tmp$th = th_diff
+  
+  t_RT = cor.test(tmp$RT,tmp$PDR)
+  t_th = cor.test(tmp$th,tmp$PDR)
+  
+  dat_corr = rbind(dat_corr, 
+                   data.frame(
+                     data_x = x,
+                     tVal_RT = t_RT$statistic,
+                     pVal_RT = t_RT$p.value,
+                     tVal_th = t_th$statistic,
+                     pVal_th = t_th$p.value
+                   ))
+  
+}
+
+data_pupil_timeCourse =  aggregate( PDR ~ sub*data_x*vField, data = data_pupil, FUN = "mean")
+
+pp1 <- disp(data_pupil_timeCourse,config,"PDR",1,c("vField"))+
+  geom_vline(xintercept=0.5, color="gray", linetype="dashed")+
+  geom_vline(xintercept=0, color="gray", linetype="solid")+
+    theme(
+    legend.position="none"
+    )
+
+pp2 = ggplot(dat_corr,aes(x=data_x,y=pVal_RT))+
+  geom_line()+
+  # xlab(config$label_x) + ylab(config$label_y) +
+  coord_cartesian(xlim = config$lim_x,ylim = c(0,1)) +
+  scale_x_continuous(expand = c(0, 0)) 
+
+pp3 = ggplot(dat_corr,aes(x=data_x,y=pVal_th))+
+  geom_line()+  
+  # xlab(config$label_x) + ylab(config$label_y) +
+  coord_cartesian(xlim = config$lim_x,ylim = c(0,1)) +
+  scale_x_continuous(expand = c(0, 0)) 
+
+layout <- rbind(c(1,1),c(2,2),c(3,3))
+p = combineGraphs(seq(1,3),'pp',layout)
+plot(p)
+
+
+# Time-course of pupillary response (across VF) ----------------------------------
+config$grCol = NULL
+
+data_pupil_timeCourse =  aggregate( PDR ~ sub*data_x*vField*SOA, data = data_pupil, FUN = "mean")
+data_pupil_timeCourse =  aggregate( PDR ~ sub*data_x*vField, data = data_pupil_timeCourse, FUN = "mean")
+
+data_RT_ave = ind_data[ind_data$RT > 0 & ind_data$RT < 3000,]
+data_RT_ave =  aggregate( RT ~ sub*SOA*vField, data = data_RT_ave, FUN = "mean")
+data_RT_ave = aggregate( RT ~ sub*vField, data = data_RT_ave, FUN = 'mean')
+data_RT_ave$vField = "average"
+
+p <- disp(data_pupil_timeCourse,config,"PDR",1,c("vField"))+
+  geom_vline(xintercept=0.5, color="gray", linetype="dashed")+
+  geom_vline(xintercept=0, color="gray", linetype="solid")+
+  geom_vline(xintercept=mean(data_RT_ave$RT)/1000, color="gray50", linetype="solid")
+
+
+config$xlim = c(sTime,round(seq(0,eTime,0.5),4))
+config$xlim_stride = 0.05
+
+if(normFlg){
+  config$ylim = round(seq(-0.1,0.8,0.1),4)
+  config$ylim_stride = 0.02
+}else{
+  config$ylim = round(seq(-0.05,0.3,0.05),4)
+  config$ylim_stride = 0.005
+}
+
+p = setEmptyStyle(p,config)
+p = p + scale_x_continuous(breaks=config$xlim)
+
+p_all$pupilAverageVFs = p
+
+# Time-course of pupillary response (res locked) ----------------------------------
+config$grCol = NULL
+config$lim_y = c(-0.5,0.5)
+config$lim_x = c(-1,3.55)
+config$grCol = c("#D97168","#738CD9")
+
+data_pupil_timeCourse =  aggregate( PDR_res ~ sub*data_x*vField, data = data_pupil_res, FUN = "mean")
+
+p <- disp(data_pupil_timeCourse,config,"PDR",1,c("vField"))
+
+config$xlim = c(sTime,round(seq(0,2,0.5),4))
+config$xlim_stride = 0.05
+
+if(normFlg){
+  config$ylim = round(seq(-0.4,0.4,0.1),4)
+  config$ylim_stride = 0.02
+}else{
+  config$ylim = round(seq(-0.05,0.3,0.05),4)
+  config$ylim_stride = 0.005
+}
+
+p = setEmptyStyle(p,config)
+p = p + scale_x_continuous(breaks=config$xlim)
+
+p_all$pupiTimeCourseResLocked = p
+p_all$pupiTimeCourseResLocked$size = c(4.5,5)
+
+# Averaged pupillary response (res locked) ----------------------------------
+config$title = ""
+
+model1 <- deriv(~b0+b1*x, namevec = c("b0","b1"), function.arg = c("x","b0","b1"))
+model2 <- deriv(~b0+b1*x+b2*x^2, namevec = c("b0","b1","b2"), function.arg = c("x","b0","b1","b2"))
+
+tmp_plot = data_pupil_res[data_pupil_res$data_x >= 0 & data_pupil_res$data_x <= 2,]
+tmp_plot = aggregate( PDR_res ~ sub*vField*SOA, data = tmp_plot, FUN = "mean")
+tmp_anova = tmp_plot
+
+data_curve = data.frame()
+for (ivField in unique(tmp_anova$vField)){
+  
+  candi_model1 <- nlmer( PDR_res ~ model1(SOA,b0,b1)~(b0|sub), tmp_anova[tmp_anova$vField == ivField,], start = c(b0 = 0, b1 = 0))
+  candi_model2 <- nlmer( PDR_res ~ model2(SOA,b0,b1,b2) ~ (b0|sub), tmp_anova[tmp_anova$vField == ivField,], start = c(b0 = 0, b1 = 0, b2=0) )
+ 
+   if (AIC(candi_model1) > AIC(candi_model2)){
+    model = candi_model2
+    m = function(model,x){return(fixef(model)[1] + fixef(model)[2]*x + fixef(model)[3]*x^2)}
+    tVal = summary(candi_model2)[["coefficients"]]["b2",]["t value"]
+  }else{
+    model = candi_model1
+    m = function(model,x){return(fixef(model)[1] + fixef(model)[2]*x)}
+    tVal = summary(candi_model2)[["coefficients"]]["b1",]["t value"]
+  }
+  # summary(model)
+  df <- data.frame(x = seq(-83.3, 33.3, length = 1000))
+  tmp = data.frame(
+    x = df$x,
+    # yy = predict(model, df),
+    yy = m(candi_model2, x = seq(-83.3, 33.3, length = 1000)),
+    b = fixef(model)[length(fixef(model))],
+    t = tVal,
+    vField = ivField
+  )
+  data_curve = rbind(data_curve,tmp)
+}
+
+tmp_plot[tmp_plot$vField == "LVF",]$SOA = tmp_plot[tmp_plot$vField == "LVF",]$SOA - 2
+tmp_plot[tmp_plot$vField == "RVF",]$SOA = tmp_plot[tmp_plot$vField == "RVF",]$SOA + 2
+
+p <- dispLineGraph(tmp_plot, config, "PDR_res", c("SOA","vField"))+
+  geom_line(data = data_curve, aes(x=x,y=yy)) +
+  geom_text(data = tmp_plot_weight, 
+            aes(x = 8, y = 0.13,
+                label=paste0('beta = ',round(b,digits = 4),',t = ',round(t,digits = 4))),
+            position=position_jitter(width=0,height=0.06),size = 3)
+
+config$xlim = round(seq(-83.3, 33.3,length=8),4)
+config$xlim_stride = 5
+config$ylim = round(seq(-0.1,0.2,0.05),4)
+config$ylim_stride = 0.005
+
+p = setEmptyStyle(p,config)+
+   scale_x_continuous(breaks=g1) +
+   theme(
+    legend.position="none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+
+p_all$pupilAverageResLocked = p
+p_all$pupilAverageResLocked$size = c(4.5,5)
+
+anovakun(tmp_anova,"sAB",long=T, peta=T)
+tableAvePupilVF = forDrawingSigANOVA
+
+tmp_anova$SOA = factor(tmp_anova$SOA,levels = unique(tmp_anova$SOA))
+tmp_anova$vField = factor(tmp_anova$vField,levels = unique(tmp_anova$vField))
+tmp_anova$sub = factor(tmp_anova$sub,levels = unique(tmp_anova$sub))
+
+tableAvePupilVF_bf = anovaBF(PDR_res ~ vField*SOA + sub, data=tmp_anova, whichRandom = "sub")
+
+phasicPupil_table = list(list(
+  anovaTab = forDrawingSigANOVA,
+  bf       = round(exp(tableAvePupilVF_bf@bayesFactor[["bf"]]),3)
+))
+names(phasicPupil_table) <- c('phasicPupil_table')
+
+anovaTabAll = c(anovaTabAll,phasicPupil_table)
+
+
+# Corr. between RT and Pupil change ----------------------------------
+tmp_plot = data_pupilAll_res[data_pupilAll_res$data_x >= 0 & data_pupilAll_res$data_x <= 2,]
+tmp_plot = aggregate( PDR_res ~ sub*vField*SOA*numOfTrial, data = tmp_plot, FUN = "mean")
+
+data_RT_anova =  aggregate( RT ~ sub*vField*SOA*numOfTrial, data = ind_data, FUN = "mean")
+
+tmp_plot$RT = data_RT_anova$RT
+tmp_plot = tmp_plot[tmp_plot$RT > 0 & tmp_plot$RT < 3000,]
+
+tmp_plot =  aggregate( . ~ sub*vField*SOA, data = tmp_plot, FUN = "mean")
+
+tmp_plot$SOA = factor(tmp_plot$SOA,levels = unique(tmp_plot$SOA))
+
+model = lmer( RT ~ PDR_res + (1+PDR_res|sub), tmp_plot)
+
+p_all$corr_RT_PDR = ggplot(tmp_plot,aes(x = PDR_res, y = RT, group = sub, color = SOA))+
+  geom_point(size=1,alpha=0.8,shape=16)+ 
+  geom_abline(intercept = summary(model)$coefficients["(Intercept)",]["Estimate"],
+              slope = summary(model)$coefficients["PDR_res",]["Estimate"])
+  # facet_wrap(.~sub)
+
+config$xlim = round(seq(-2,2,1))
+config$xlim_stride = 0.1
+config$ylim = round(seq(400,2000,400))
+config$ylim_stride = 40
+
+p_all$corr_RT_PDR = setEmptyStyle(p_all$corr_RT_PDR,config)
+
+p_all$corr_RT_PDR$size = c(6,5)
+
+
+# Corr. phasic vs. PSE -----------------------------------------------------------------
+
+tmp_plot = data_pupilAll_res[data_pupilAll_res$data_x >= 0 & data_pupilAll_res$data_x <= 2,]
+tmp_plot = aggregate( PDR_res ~ sub*vField, data = tmp_plot, FUN = "mean")
+
+tmp_plot$pse = dat_th_ind$th
+config$title = "corr. (phasic vs. th)"
+config$label_y = paste0("Phasic pupil size",unitName)
+config$label_x = "PSE [ms]"
+
+tmp_plot$diff_pse = tmp_plot[tmp_plot$vField == "LVF",]$pse - tmp_plot[tmp_plot$vField == "RVF",]$pse
+tmp_plot$diff_PDR = tmp_plot[tmp_plot$vField == "LVF",]$PDR_res - tmp_plot[tmp_plot$vField == "RVF",]$PDR_res
+
+tmp_plot = tmp_plot[tmp_plot$vField == "LVF",]
+
+m = lm(tmp_plot$diff_PDR ~ tmp_plot$diff_pse)
+
+r = cor.test(tmp_plot$diff_pse,tmp_plot$diff_PDR)
+
+p_all$corr_PSE_PDR = ggplot(tmp_plot,aes(x = diff_pse, y = diff_PDR))+
+  geom_point(size=3,shape=16) + 
+  geom_abline(aes(intercept=coef(m)["(Intercept)"],slope = coef(m)["tmp_plot$diff_pse"])) +
+  ggtitle(paste0("R = ",round(r$estimate,4), ", p = ", round(r$p.value,4)))
+
+config$ylim = round(seq(-0.6,0.4,0.2),4)
+config$ylim_stride = 0.02
+config$xlim = round(seq(-120,120,40),4)
+config$xlim_stride = 2
+
+p_all$corr_PSE_PDR = setEmptyStyle(p_all$corr_PSE_PDR,config) +
+  theme(
+  legend.position = 'none'
+)
+
+p_all$corr_PSE_PDR$size = c(6,5)
+
+# Averaged pupillary response (across VF) ----------------------------------
+config$title = ""
+config$grCol = "gray30"
+
+data_pupilAve = data_pupil[data_pupil$data_x > 0 & data_pupil$data_x < WIN_ANALYSIS,]
+data_pupilAve = aggregate( PDR ~ sub*vField*SOA, data = data_pupilAve, FUN = "mean")
+data_pupilAve =  aggregate( PDR ~ sub*SOA, data = data_pupilAve, FUN = "mean")
+
+anovakun(data_pupilAve,"sA",long=T, peta=T)
+tableAvePupil = forDrawingSigANOVA
+
+data_pupilAve$vField = "averaged pupil size from 0 to 3.5s across VFs"
+x = data_pupilAve$SOA
+y = data_pupilAve$PDR
+f <- y ~  a*x + b
+model1 <- nls(f, start = c(a = 0, b = 0))
+
+f <- y ~  a*x^2 + b*x + c
+model2 <- nls(f, start = c(a = 0, b = 0, c=0))
+
+if (AIC(model1) > AIC(model2)){
+  model = model2
+}else{
+  model = model1
+}
+
+df <- data.frame(x = seq(-83.3, 33.3, length = 1000))
+data_curve = data.frame(
+  x = df$x,
+  yy = predict(model, df),
+  vField = "average"
+)
+
+p <- dispLineGraph(data_pupilAve,config, "PDR", c("SOA","vField"))+
+  geom_line(data = data_curve, aes(x=x,y=yy), color='gray')+
+  xlab('SOA[ms]')
+
+config$xlim = round(seq(-83.3, 33.3,length=8),4)
+config$xlim_stride = 3
+if(normFlg){
+  config$ylim = round(seq(0.2,0.4,0.05),4)
+  config$ylim_stride = 0.005
+}else{
+  config$ylim = round(seq(0.1,0.15,0.01),4)
+  config$ylim_stride = 0.005
+}
+
+p = setEmptyStyle(p,config)
+
+p = p +
+  scale_x_continuous(breaks=g1) +
+  theme(
+    legend.position="none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+
+
+
+
+# Time-course of pupillary response (LVF vs. RVF) --------------------------------------------------
+config$grCol = c("#D97168","#738CD9")
+data_pupil_timeCourse =  aggregate( PDR ~ sub*data_x*vField, data = data_pupil, FUN = "mean")
+
+pVal = NULL
+bfVal = NULL
+for (iTime in unique(data_pupil_timeCourse$data_x)){
+  x = data_pupil_timeCourse[data_pupil_timeCourse$data_x == iTime &
+                              data_pupil_timeCourse$vField == "LVF",]$PDR
+  y = data_pupil_timeCourse[data_pupil_timeCourse$data_x == iTime &
+                              data_pupil_timeCourse$vField == "RVF",]$PDR
+  d = t.test(x,y,var.equal=T,paired=T)
+  
+  pVal = rbind(pVal,round(d[["p.value"]], digits = 4))
+  
+  bf = ttestBF(x = x, y = y, paired=TRUE)
+  bfVal = rbind(bfVal,round(exp(bf@bayesFactor[["bf"]]),3))
+  
+}
+
+dat_p = data.frame(
+  # pVal = p.adjust(pVal, method = "BH"),
+  pVal = pVal,
+  bfVal = bfVal,
+  data_y = 1,
+  data_x = unique(data_pupil_timeCourse$data_x),
+  condition='sig',
+  vField = "ttest"
+)
+
+dat_p['flag'] = rep('gray',dim(dat_p)[1])
+ind = dat_p['pVal'] < 0.1 & dat_p['pVal'] > 0.05
+dat_p['data_y'][ind] = -0.05
+dat_p['flag'][ind] = 'gray'
+ind = dat_p['pVal'] < 0.05
+dat_p['data_y'][ind] = -0.05
+dat_p['flag'][ind] = 'black'
+
+p <- disp(data_pupil_timeCourse,config,"PDR",1,c("vField"))+
+  ggtitle("      averaged across lags")+
+  # geom_point(data=dat_p, aes(x=data_x, y = data_y),color=dat_p$flag, size = 2,shape=15) +
+  geom_vline(xintercept=0.5, color="gray", linetype="dashed")+
+  geom_vline(xintercept=0, color="gray", linetype="solid")
+
+config$xlim = c(sTime,round(seq(0,eTime,0.5),4))
+config$xlim_stride = 0.05
+
+if(normFlg){
+  config$ylim = round(seq(-0.1,0.8,0.1),4)
+  config$ylim_stride = 0.02
+}else{
+  config$ylim = round(seq(-0.05,0.3,0.05),4)
+  config$ylim_stride = 0.005
+}
+
+# config$ylim = round(seq(4.5,5.5,0.2),4)
+# config$ylim_stride = 0.05
+
+p = setEmptyStyle(p,config)
+p = p + scale_x_continuous(breaks=config$xlim)
+
+p <- p + theme(
+  legend.justification=c(0,1), legend.position=c(0,1)
+)
+
+p2_t = ggplot(dat_p,aes(x=data_x,y=pVal))+
+  geom_line()
+
+config$ylim = round(seq(0,1,0.05),2)
+config$ylim_stride = 0.005
+
+p2_t = setEmptyStyle(p2_t,config)+
+  scale_y_continuous(breaks=config$ylim,position = "right")+ 
+  theme_half_open()+ 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+
+aligned_plots <- align_plots(p, p2_t, align="hv", axis="tblr")
+p = ggdraw(aligned_plots[[1]]) + draw_plot(aligned_plots[[2]])
+
+
+
+
+# Time-course of pupillary response (each screen) --------------------------------------------------
+config$grCol = c("#D97168","#738CD9")
+
+# LVF vs. RVF -----------------------------------------------------------------
+config$title = "averaged pupil size from 0 to 3.5s"
+data_pupilAve = data_pupil[data_pupil$data_x > 0 & data_pupil$data_x < WIN_ANALYSIS,]
+data_pupilAve =  aggregate( PDR ~ sub*vField, data = data_pupilAve, FUN = "mean")
+
+x = data_pupilAve[data_pupilAve$vField == "LVF",]$PDR
+y = data_pupilAve[data_pupilAve$vField == "RVF",]$PDR
+n = length(x)
+bf = ttestBF(x = x, y = y, paired=TRUE)
+
+sig = t.test(x,y,var.equal=T,paired=T)
+
+sigPair = NULL
+sigPair = cbind(sigPair,"LVF")
+sigPair = cbind(sigPair,"<")
+sigPair = cbind(sigPair,"RVF")
+sigPair = cbind(sigPair,sig[["p.value"]])
+
+p <- dispLineGraph(data_pupilAve,config,"PDR",c("vField"))
+# p <- drawSignificance(p,sigPair,0.14,0.05,nsFlag)
+
+config$xlim = round(seq(1,2,1),4)
+config$xlim_stride = 0.5
+
+if(normFlg){
+p <- drawSignificance(p,sigPair,0.4,0.05,nsFlag)
+  config$ylim = round(seq(0.25,0.4,0.05),4)
+  config$ylim_stride = 0.05
+}else{
+p <- drawSignificance(p,sigPair,5.2,0.05,nsFlag)
+  config$ylim = round(seq(0.1,0.15,0.01),4)
+  config$ylim_stride = 0.005
+}
+
+p = setEmptyStyle(p,config)
+
+
+phasic_table = list(list(
+  anovaTab = sig,
+  cohen_d   = abs(round(sig[["statistic"]][["t"]] / sqrt(n),3)),
+  bf       = round(exp(bf@bayesFactor[["bf"]]),3)
+))
+names(phasic_table) <- c('phasic_table')
+
+anovaTabAll = c(anovaTabAll,phasic_table)
+
+numOfSub = length(unique(data_pupilAve$sub))
+f = data.frame(
+  sub = as.character(unique(data_pupilAve$sub)),
+  y = matrix(data_pupilAve$PDR,nrow = numOfSub)
+)
+
+# Time course of illusion vs. no-illusion -----------------------------------------------------------------
+
+data_illusion = data_pupilAll[data_pupilAll$SOA != 0,]
+data_illusion$illusion = "illusion"
+# data_illusion$SOA = as.numeric(as.character(as.factor(data_illusion$SOA)))
+
+data_illusion[data_illusion$SOA>0 &
+                data_illusion$Task == 1,]$illusion ="no-illusion"
+data_illusion[data_illusion$SOA<0 &
+                data_illusion$Task == 0,]$illusion ="no-illusion"
+
+
+tmpTrial = data_illusion[data_illusion$data_x == data_illusion$data_x[1],]
+tmpTrial$n = 1
+tmpTrial =  aggregate( n ~ sub*illusion*vField, data = tmpTrial, FUN = "sum")
+# tmpTrial$data_y = tmpTrial$n
+
+p <- dispLineGraph(tmpTrial,config,"n",c("illusion","vField"))
+
+data_illusion =  aggregate( PDR ~ sub*data_x*illusion*vField, data = data_illusion, FUN = "mean")
+
+p <- disp(data_illusion,config,"PDR",1,c("illusion","vField"))+
+  ggtitle("     illusion vs. no-illusion")+
+  facet_grid(. ~ vField)+
+  geom_vline(xintercept=0.5, color="gray", linetype="dashed")+
+  geom_vline(xintercept=0, color="gray", linetype="solid")
+
+config$xlim = c(sTime,round(seq(0,eTime,0.5),4))
+config$xlim_stride = 0.05
+
+if(normFlg){
+  config$ylim = round(seq(0.25,0.4,0.05),4)
+  config$ylim_stride = 0.05
+}else{
+  config$ylim = round(seq(-0.05,0.3,0.05),4)
+  config$ylim_stride = 0.005
+}
+
+
+p = setEmptyStyle(p,config)
+p = p + scale_x_continuous(breaks=config$xlim)
+
+
+
+
+# Averaged illusion vs. non-illusion -----------------------------------------------------------------
+data_illusion = data_illusion[data_illusion$data_x > 0 & data_illusion$data_x < WIN_ANALYSIS,]
+data_illusion =  aggregate( PDR ~ sub*illusion*vField, data = data_illusion, FUN = "mean")
+
+p <- dispLineGraph(data_illusion,config,"PDR",c("vField","illusion"))
+
+config$xlim = round(seq(1,2,1),4)
+config$xlim_stride = 0.5
+if(normFlg){
+  config$ylim = round(seq(-0.1,0.6,0.1),4)
+  config$ylim_stride = 0.01
+}else{
+  config$ylim = round(seq(0.1,0.15,0.01),4)
+  config$ylim_stride = 0.005
+}
+
+p = setEmptyStyle(p,config)
+
+
+anovakun(data_illusion,"sAB",long=T, peta=T,gg=T)
+tableIllusionPupil = forDrawingSigANOVA
+
+data_illusion$illusion = factor(data_illusion$illusion,levels = unique(data_illusion$illusion))
+data_illusion$vField = factor(data_illusion$vField,levels = unique(data_illusion$vField))
+data_illusion$sub = factor(data_illusion$sub,levels = unique(data_illusion$sub))
+
+tableIllusionPupil_bf = anovaBF(PDR ~ illusion*vField + sub, data=data_illusion, whichRandom = "sub")
+
+illusion_phasicPupil_table = list(list(
+  anovaTab = forDrawingSigANOVA,
+  bf       = round(exp(tableIllusionPupil_bf@bayesFactor[["bf"]]),3)
+))
+names(illusion_phasicPupil_table) <- c('illusion_phasicPupil_table')
+
+anovaTabAll = c(anovaTabAll,phasicPupil_table)
+
+
+
+# AUC -----------------------------------------------------------------
+
+tmp_plot =  aggregate( PDR ~ sub*data_x, data = data_pupil, FUN = "mean")
+
+p <- ggplot(tmp_plot,aes(x=data_x, y=PDR, group=interaction(sub)),color="blue")+
+  geom_line(color="black")+
+  geom_point(data=minLatency,aes(x=min,y=ave_min_y),alpha=0.5,size=2,color="red")+
+  geom_point(data=minLatency,aes(x=max,y=ave_max_y),alpha=0.5,size=2,color="blue")+
+  xlab("Time [sec]")+
+  ylab(paste0("Pupil size",unitName))+
+  # geom_hline(data=data_auc[data_auc$comp == "Late",],aes(yintercept=minVal), color="gray50", linetype="solid")+
+  geom_hline(yintercept=0, color="black", linetype="solid")
+  # facet_wrap(sub~.)
+
+config$xlim = c(sTime,round(seq(0,3.5,0.5),4))
+config$xlim_stride = 0.05
+
+if(normFlg){
+  config$ylim = round(seq(-1,2,0.5),4)
+  config$ylim_stride = 0.02
+}else{
+  config$ylim = round(seq(-0.05,0.3,0.05),4)
+  config$ylim_stride = 0.005
+}
+p = setEmptyStyle(p,config)
+
+# data_auc_anova =  aggregate( data_y ~ sub*vField, data = data_auc[data_auc$comp=="Late",], FUN = "mean")
+# anovakun(data_auc_anova,"sA",long=T, peta=T, gg=T)
+
+config$label_y = "The area from peak to min [z]"
+
+p_all$PDPC = p
+p_all$PDPC$size = c(4.5,5)
+
+
+# velocity -----------------------------------------------------------------
+
+tmp_plot =  aggregate( vel ~ sub*vField*SOA, data = data_velocity, FUN = "mean")
+tmp_anova = tmp_plot
+
+tmp_plot[tmp_plot$vField == "LVF",]$SOA = tmp_plot[tmp_plot$vField == "LVF",]$SOA - 2
+tmp_plot[tmp_plot$vField == "RVF",]$SOA = tmp_plot[tmp_plot$vField == "RVF",]$SOA + 2
+
+config$label_y = "PD change [z/s]"
+ 
+p_all$pupilVelocity = dispLineGraph(tmp_plot,config, "vel", c("SOA","vField"))
+
+config$xlim = round(seq(-83.3, 33.3,length=8),4)
+config$xlim_stride = 5
+if(normFlg){
+  config$ylim = round(seq(-0.6,-0.3,0.1),4)
+  config$ylim_stride = 0.01
+}else{
+  config$ylim = round(seq(0.1,0.15,0.01),4)
+  config$ylim_stride = 0.005
+}
+
+p_all$pupilVelocity = setEmptyStyle(p_all$pupilVelocity,config)+
+  scale_x_continuous(breaks=g1) +
+  theme(
+    legend.position="none",
+    axis.text.x = element_text(angle = 30, hjust = 1)
+  )
+
+p_all$pupilVelocity$size = c(4.5,5)
+
+anovakun(tmp_anova,"sAB",long=T, peta=T,gg=T)
+
+tmp_anova$SOA = factor(tmp_anova$SOA,levels = unique(tmp_anova$SOA))
+tmp_anova$vField = factor(tmp_anova$vField,levels = unique(tmp_anova$vField))
+tmp_anova$sub = factor(tmp_anova$sub,levels = unique(tmp_anova$sub))
+
+bf = anovaBF(vel ~ vField*SOA + sub, data=tmp_anova, whichRandom = "sub")
+
+phasicPupilVel_table = list(list(
+  anovaTab = forDrawingSigANOVA,
+  bf       = round(exp(bf@bayesFactor[["bf"]]),3)
+))
+names(phasicPupilVel_table) <- c('phasicPupilVel_table')
+anovaTabAll = c(anovaTabAll,phasicPupilVel_table)
+
+```
+
+## Baseline pupil size (1s ahead of bar moving)
+```{r, message=FALSE, warning=FALSE, echo=FALSE, include=FALSE}
+
+config = list(
+  label_x = 'SOA[ms]',
+  label_y = "Answer of 'ahead'",
+  line = F,
+  title = "Baseline pupil size (illusion vs. non-illusion)",
+  grCol = c("#D97168","#738CD9")
+)
+
+countFigNum=1
+
+# illusion vs. non-illusion -----------------------------------------------------------------
+data_BP_illusion = ind_data
+data_BP_illusion = data_BP_illusion[data_BP_illusion$RT > 0 & data_BP_illusion$RT < 3000,]
+data_BP_illusion = data_BP_illusion[data_BP_illusion$SOA != 0,]
+
+data_BP_illusion$illusion = "miss(illusion)"
+
+data_BP_illusion[data_BP_illusion$SOA > 0 &
+                   data_BP_illusion$Task == 1,]$illusion = "hit(no-illusion)"
+data_BP_illusion[data_BP_illusion$SOA < 0 &
+                   data_BP_illusion$Task == 0,]$illusion = "hit(no-illusion)"
+
+
+# trial
+tmpTrial = data_BP_illusion
+tmpTrial$n = 1
+
+tmpTrial =  aggregate( n ~ sub*illusion*vField, data = tmpTrial, FUN = "sum")
+tmpTrial$data_y = tmpTrial$n
+
+p <- dispLineGraph(tmpTrial,config,"n",c("illusion","vField"))
+
+# BP
+data_BP_illusion_vField =  aggregate( Baseline ~ sub*illusion*vField, data = data_BP_illusion, FUN = "mean")
+
+p <- dispLineGraph(data_BP_illusion_vField,config,"Baseline",c("illusion","vField"))
+
+for(ivField in unique(data_BP_illusion_vField$vField)){
+  x = data_BP_illusion_vField[data_BP_illusion_vField$vField == ivField & 
+                                data_BP_illusion_vField$illusion == "miss(illusion)",]$Baseline
+  y = data_BP_illusion_vField[data_BP_illusion_vField$vField == ivField & 
+                                data_BP_illusion_vField$illusion == "hit(no-illusion)",]$Baseline
+  
+  n = length(x)
+  bf = ttestBF(x = x, y = y, paired=TRUE)
+  sig = t.test(x,y,var.equal=T,paired=T)
+  
+  sigPair = NULL
+  sigPair = cbind(sigPair,ivField)
+  sigPair = cbind(sigPair,"<")
+  sigPair = cbind(sigPair,ivField)
+  sigPair = cbind(sigPair,sig[["p.value"]])
+  p <- drawSignificance(p,sigPair,-0.05,0.05,nsFlag)
+  
+}
+
+config$xlim = round(seq(1,2,1),2)
+config$xlim_stride = 0.5
+
+if(normFlg){
+  config$ylim = round(seq(-0.2,0,0.05),4)
+  config$ylim_stride = 0.005
+}else{
+  config$ylim = round(seq(4.6,5.1,0.05),4)
+  config$ylim_stride = 0.01
+}
+p = setEmptyStyle(p,config)
+
+
+
+
+p_all$BPIllusion = p
+
+anovakun(data_BP_illusion_vField,"sAB",long=T, peta=T, gg=T)
+tableIllusionBP = forDrawingSigANOVA
+
+
+# BP in each VF and Lag -----------------------------------------------------------------
+config$title = "Averaged Baseline pupil size across lags"
+
+data_BP = aggregate( Baseline ~ sub*vField*SOA, data = ind_data, FUN = "mean")
+
+tmp_plot = data_BP
+tmp_plot[tmp_plot$vField == "LVF",]$SOA = tmp_plot[tmp_plot$vField == "LVF",]$SOA - 2
+tmp_plot[tmp_plot$vField == "RVF",]$SOA = tmp_plot[tmp_plot$vField == "RVF",]$SOA + 2
+
+p = dispLineGraph(tmp_plot,config,"Baseline",c("SOA","vField"))+
+  scale_x_continuous(breaks = unique(data_BP$SOA), expand = c(0.05, 0.05))
+
+config$xlim = round(seq(-83.3, 33.3,length=8),4)
+config$xlim_stride = 5
+
+if(normFlg){
+  config$ylim = round(seq(-0.5,0,0.1),4)
+  config$ylim_stride = 0.05
+}else{
+  config$ylim = round(seq(4.6,5.1,0.05),4)
+  config$ylim_stride = 0.01
+}
+p = setEmptyStyle(p,config)
+
+p_all$BP = p
+
+
+data_BP$SOA = factor(data_BP$SOA,levels = unique(data_BP$SOA))
+
+anovakun(data_BP,"sAB",long=T, peta=T,gg=T)
+resultsBP = forDrawingSigANOVA
+
+data_BP$SOA = factor(data_BP$SOA,levels = unique(data_BP$SOA))
+data_BP$vField = factor(data_BP$vField,levels = unique(data_BP$vField))
+data_BP$sub = factor(data_BP$sub,levels = unique(data_BP$sub))
+
+resultsBP_bf = anovaBF(Baseline ~ vField*SOA + sub, data=data_BP, whichRandom = "sub")
+
+BP_table = list(list(
+  anovaTab = forDrawingSigANOVA,
+  bf       = round(exp(resultsBP_bf@bayesFactor[["bf"]]),5)
+))
+names(BP_table) <- c('BP_table')
+
+anovaTabAll = c(anovaTabAll,BP_table)
+
+# BP in each VF -----------------------------------------------------------------
+
+config$title = "Baseline pupil size across VFs"
+config$label_y = paste0("BP size",unitName)
+config$label_x = ""
+
+data_BP = aggregate( Baseline ~ sub*vField*SOA, data = ind_data, FUN = "mean")
+data_BP = aggregate( Baseline ~ sub*vField, data = data_BP, FUN = "mean")
+
+p = dispLineGraph(data_BP,config,"Baseline",c("vField"))+
+  theme(
+    legend.position="none"
+  )
+
+x = data_BP[data_BP$vField == "LVF",]$Baseline
+y = data_BP[data_BP$vField == "RVF",]$Baseline
+sig = t.test(x,y,var.equal=T, paired=TRUE)
+
+bf = ttestBF(x = x, y = y, paired=TRUE)
+
+sigPair = NULL
+sigPair = cbind(sigPair,"LVF")
+sigPair = cbind(sigPair,"<")
+sigPair = cbind(sigPair,"RVF")
+sigPair = cbind(sigPair,sig[["p.value"]])
+
+config$xlim = round(seq(1,2,1),4)
+config$xlim_stride = 0.5
+
+if(normFlg){
+  p <- drawSignificance(p,sigPair,-0.03,0.05,nsFlag)
+  config$ylim = round(seq(-0.15,-0.1,0.01),4)
+  config$ylim_stride = 0.005
+}else{
+  p <- drawSignificance(p,sigPair,4.95,0.05,nsFlag)
+  config$ylim = round(seq(4.6,5.1,0.05),4)
+  config$ylim_stride = 0.01
+}
+
+p = setEmptyStyle(p,config)
+
+p_all$BPVFs = p
+p_all$BPVFs$size = c(3,5)
+
+tonic_table = list(list(
+  anovaTab = sig,
+  cohen_d   = abs(round(sig[["statistic"]][["t"]] / sqrt(n),3)),
+  bf       = round(exp(bf@bayesFactor[["bf"]]),3)
+))
+
+names(tonic_table) <- c('tonic_table')
+
+anovaTabAll = c(anovaTabAll,tonic_table)
+
+numOfSub = length(unique(data_BP$sub))
+f = data.frame(
+  sub = as.character(unique(data_BP$sub)),
+  y = matrix(data_BP$Baseline,nrow = numOfSub)
+)
+
+n1 = paste0("LVF")
+n2 = paste0("RVF")
+
+colnames(f) <- c("subject", matrix(rbind(n1,n2),nrow=1))
+write.csv(f, paste0("./JASP/",date,"/tonic_table.csv"),row.names=FALSE)
+
+
+```
+
+## gaze heat map
+```{r, message=FALSE, warning=FALSE, echo=FALSE, include=FALSE}
+
+config = list(
+  label_x = "",
+  label_y = "gaze bias to stimulus side [degree]",
+  line = F,
+  title = "",
+  grCol = c("#D97168","#738CD9")
+)
+
+countFigNum = 1
+
+# gaze hist -----------------------------------------------------------------
+
+tmp_plot = aggregate(density ~ sub*breaks*vField, data = gaze_hist, FUN = 'mean')
+
+config$grCol = c("#D97168","#738CD9")
+config$gr_outline = c("#D97168","#738CD9")
+
+p_all$gazeHist = dispBarGraph(tmp_plot,config,"density",c("breaks","vField"))
+
+config$ylim = round(seq(0,0.4,0.1),4)
+config$ylim_stride = 0.01
+config$xlim = round(seq(-3,5,1),2)
+config$xlim_stride = 0.1
+
+p_all$gazeHist = setEmptyStyle(p_all$gazeHist,config)+
+scale_x_continuous(breaks=config$xlim)
+
+# gaze average -----------------------------------------------------------------
+ 
+tmp_plot = gaze_all
+tmp_plot = aggregate(. ~ sub*vField, data = tmp_plot, FUN = "median")
+p = dispLineGraph(tmp_plot, config, "x", c("vField"))
+
+config$ylim = round(seq(0.7,1.2,0.1),4)
+config$ylim_stride = 0.01
+config$xlim = round(seq(1,2,1),2)
+config$xlim_stride = 0.5
+
+p = setEmptyStyle(p,config)
+
+x = tmp_plot[tmp_plot$vField == "LVF",]$x
+y = tmp_plot[tmp_plot$vField == "RVF",]$x
+n = length(x)
+bf = ttestBF(x = x, y = y, paired=TRUE)
+
+sig = t.test(x,y,var.equal=T,paired=T)
+
+sigPair = NULL
+sigPair = cbind(sigPair,"LVF")
+sigPair = cbind(sigPair,">")
+sigPair = cbind(sigPair,"RVF")
+sigPair = cbind(sigPair,sig[["p.value"]])
+
+p <- drawSignificance(p,sigPair,0.99,0.05,nsFlag)
+
+p_all$gazeAverage = p
+
+gaze_table = list(list(
+  anovaTab = sig,
+  cohen_d   = abs(round(sig[["statistic"]][["t"]] / sqrt(n),3)),
+  bf       = round(exp(bf@bayesFactor[["bf"]]),3)
+))
+
+names(gaze_table) <- c('gaze_table')
+anovaTabAll = c(anovaTabAll,gaze_table)
+
+# Corr. gaze and pse  -----------------------------------------------------------------
+
+tmp_data_BP = data_pupilAll_res[data_pupilAll_res$data_x >= -0.5 & data_pupilAll_res$data_x <= 0,]
+tmp_data_BP =  aggregate( . ~ sub*vField, data = tmp_data_BP, FUN = "mean")
+
+tmp_plot = data_pupilAll_res[data_pupilAll_res$data_x >= 0 & data_pupilAll_res$data_x <= 2,]
+# tmp_plot = aggregate( PDR_res ~ sub*vField*SOA*numOfTrial, data = tmp_plot, FUN = "mean")
+tmp_plot = aggregate( PDR_res ~ sub*vField, data = tmp_plot, FUN = "mean")
+
+tmp_dataVel =  aggregate( vel ~ sub*vField, data = data_velocity, FUN = "mean")
+
+# tmp_data_RT =  aggregate( RT ~ sub*vField*SOA*numOfTrial, data = ind_data, FUN = "mean")
+tmp_data_RT =  aggregate( RT ~ sub*vField, data = ind_data, FUN = "mean")
+
+tmp_plot$vel = tmp_dataVel$vel
+
+tmp_plot$BP = tmp_data_BP$PDR_res
+
+tmp_data_PDR = data_pupilAll_res[data_pupilAll_res$data_x >= 0 & data_pupilAll_res$data_x <= 2,]
+tmp_data_PDR = aggregate( PDR_res ~ sub*vField, data = tmp_data_PDR, FUN = "mean")
+
+tmp_data_gaze = aggregate(. ~ sub*vField, data = gaze_all, FUN = "median")
+tmp_plot$gazeBias = tmp_data_gaze$x
+
+tmp_plot$pse = dat_th_ind$th
+tmp_plot$RT = tmp_data_RT$RT
+
+for(mmName1 in names(tmp_plot[3:length(tmp_plot)])){
+  eval(parse(text=paste0("tmp_plot[tmp_plot$vField == 'LVF',]$",mmName1, 
+                         " = tmp_plot[tmp_plot$vField == 'LVF',]$",mmName1,
+                         " - tmp_plot[tmp_plot$vField == 'RVF',]$",mmName1)))
+}
+
+tmp_plot = tmp_plot[tmp_plot$vField == 'LVF',]
+
+library(tidyverse)
+tmp_plot$sub = NULL
+tmp_plot$vField = NULL
+
+
+cormat <- cor(tmp_plot, method = "spearman")
+cormat = round(cormat,4)
+
+cormat[upper.tri(cormat)] = "-"
+
+cormat_melt <- cor(tmp_plot, method = "spearman") %>% melt()
+
+tmp = cor(tmp_plot, method = "spearman")
+tmp[upper.tri(tmp)] = NA 
+cormat_melt$na = melt(tmp)$value
+
+tmp = NULL
+for(mmName1 in names(tmp_plot)){
+  for(mmName2 in names(tmp_plot)){
+    a = eval(parse(text=paste0("cor.test(tmp_plot$",mmName1, ", tmp_plot$", mmName2,", method = 'spearman')")))
+    tmp = rbind(tmp,a$p.value)
+  }  
+}
+cormat_melt$pVal = tmp
+  
+p_all$corrMat = ggplot(data = cormat_melt, aes(x = X1, y = X2, fill = value)) + 
+  # ggplot(data = cormat_melt, aes(x = Var1, y = Var2, fill = value)) + 
+  geom_tile() +
+  geom_text(aes(label = round(value, 2)), position=position_nudge(y=0.2), size=0.5, colour="grey20") +
+  geom_text(aes(label = paste0("(",round(pVal, 4),")")), position=position_nudge(y=-0.2), 
+            colour="grey20", size=0.5) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0)+
+   theme(
+    aspect.ratio=1
+  )
+
+p_all$corrMat$size = c(6,6)
+
+cor.test(tmp_plot$vel,tmp_plot$PDR_res)
+p1 = ggplot(tmp_plot,aes(x = vel, y = PDR_res))+
+  geom_point(size=3,shape=16)
+
+cor.test(tmp_plot$pse,tmp_plot$PDR_res)
+p2 = ggplot(tmp_plot,aes(x = pse, y = PDR_res))+
+  geom_point(size=3,shape=16)
+
+# gaze heat map -----------------------------------------------------------------
+
+tmp_plot = gaze_all
+tmp_plot[tmp_plot$vField == "LVF",]$x = -tmp_plot[tmp_plot$vField == "LVF",]$x
+
+tmp_plot = ind_data
+tmp_plot$gazeX = atanh(((tmp_plot$gazeX*cfg$DOT_PITCH)/10)/cfg$VISUAL_DISTANCE) * (180/pi)
+tmp_plot$gazeY = atanh(((tmp_plot$gazeY*cfg$DOT_PITCH)/10)/cfg$VISUAL_DISTANCE) * (180/pi)
+
+# p = ggplot(tmp_plot, aes(x=x, y=y)) +
+p = ggplot(tmp_plot, aes(x=gazeX, y=gazeY)) +
+  stat_density_2d(geom = "polygon", aes(fill = vField, alpha = ..level..))+
+  # stat_density_2d(aes(fill = ..density..,alpha = ..level..), geom = "raster", contour = FALSE) +
+  # geom_density_2d_filled(aes(group=vField,alpha = ..level..))+
+  scale_fill_manual(values = config$grCol)+
+  # scale_fill_continuous(type = "viridis") +
+  facet_grid(.~vField)+
+  xlab("gaze x position [degree]")+
+  ylab("gaze y position [degree]")
+
+config$ylim = round(seq(-4,4,1),2)
+config$ylim_stride = 0.1
+config$xlim = round(seq(-4,4,1),2)
+config$xlim_stride = 0.1
+
+p = setEmptyStyle(p,config)+
+  scale_x_continuous(breaks=config$xlim)+
+  theme(
+    legend.position = 'none',
+    aspect.ratio=1
+  )
+
+p_all$gazeHeatMap= p
+
+```
+
+
+## Blink
+```{r, message=FALSE, warning=FALSE, echo=FALSE, include=FALSE}
+
+#### file loading
+config <- list(lim_x = c(sTime,3.5),
+               lim_y = c(0,1),
+               alpha = 0.1,
+               stride = 0.1,
+               label_x = "Time [sec]",
+               label_y = paste0("Pupil size",unitName),
+               title = "averaged across VFs",
+               linetype = FALSE,
+               line = F,
+               grCol = c("#D97168","#738CD9")
+)
+
+p_all$blink = disp(data_pupil,config,"zeroArray",1,c("vField"))+
+  geom_vline(xintercept = cfg$WID_ANALYSIS)
+
+config$ylim = round(seq(0,1,0.25),2)
+config$ylim_stride = 0.025
+config$xlim = round(seq(sTime,3.5,0.5),2)
+config$xlim_stride = 0.05
+
+p_all$blink = setEmptyStyle(p_all$blink,config)+
+  scale_x_continuous(breaks=config$xlim)
+
+```
+
+\newpage
+
+```{r, message=FALSE, echo=FALSE, warning=FALSE,include=FALSE}
+if(saveFig){
+  mmName = names(p_all)
+  for(iFig in 1:length(mmName)){
+    if("size" %in% names(p_all[[iFig]])){
+      CairoPDF(file=paste0(saveFolder,iFig,"_",mmName[iFig]),
+               width=p_all[[iFig]]["size"][[1]][1],height=p_all[[iFig]]["size"][[1]][2],
+               bg = 'transparent')
+    }else{
+      CairoPDF(file=paste0(saveFolder,iFig,"_",mmName[iFig]),
+               bg = 'transparent')
+    }
+    eval(parse(text=paste0("print(p_all[[",iFig,"]])")))
+    dev.off()
+  }
+}
+```
+
+
+```{r child="results.Rmd"}
+```
+ 
