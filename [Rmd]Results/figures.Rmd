@@ -1,5 +1,5 @@
 ---
-title: "Figures' note for FLI-Anistropy"
+title: "Figures' note for 'The lateralized flash-lag illusion: A psychophysical and pupillometry study.'"
 author: "Yuta Suzuki"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
@@ -11,13 +11,16 @@ output:
     # css: style.css
 ---
 
-# Article information
+# Author information
 
-Yuta Suzuki$^1$, Sumeyya Atmaca$^2$, Bruno Laeng$^2$
+Yuta Suzuki$^1$, Sumeyya Atmaca$^2$, Bruno Laeng$^{2,3}$
 
 $^1$ NTT Communication Science Laboratories, NTT Corporation, Atsugi 243-0198, Japan
 
 $^2$ University of Oslo, Department of Psychology
+
+$^3$ RITMO Centre for Interdisciplinary Studies in Rhythm, Time and Motion, University of Oslo, Oslo, Norway
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -99,9 +102,7 @@ p_all = list()
 \newpage
 
 # Results
-
 ## Behavioral data
-
 ### PSE
 ```{r, message=FALSE, warning=FALSE, echo=FALSE, include=FALSE}
 
@@ -244,6 +245,7 @@ p <- p + theme(
 )
 
 p_all$pseSub = p
+p_all$pseSub$size = c(20,20)
 
 # bootstrap -------------------------------------------------------------------
 
@@ -290,7 +292,6 @@ countFigNum = 1
 config$grCol = c("#D97168","#738CD9")
 data_RT_anova = ind_data
 data_RT_anova = data_RT_anova[data_RT_anova$RT > 0 & data_RT_anova$RT < 3000,]
-# data_RT_anova = rejectOutlier(data_RT_anova,"RT")
 
 data_RT_anova =  aggregate( RT ~ sub*SOA*vField, data = data_RT_anova, FUN = "mean")
 
@@ -338,13 +339,13 @@ p = dispLineGraph(tmp_plot,config, "RT", c("SOA","vField")) +
    geom_text(data = tmp_plot_weight, 
             aes(x = 8, y = 930,
                 label=paste0('beta = ',round(b,digits = 4),',t = ',round(t,digits = 4))),
-            position=position_jitter(width=0,height=-20),size = 3) +
+            position=position_jitter(width=0,height=20),size = 3) +
   scale_x_continuous(breaks = unique(data_e1$SOA), expand = c(0.05, 0.05))
 # facet_grid(. ~ vField)
 
 config$xlim = round(seq(-83.3, 33.3,length=8),4)
 config$xlim_stride = 5
-config$ylim = round(seq(900,1100,100),4)
+config$ylim = round(seq(800,1100,100),4)
 config$ylim_stride = 10
 
 p = setEmptyStyle(p,config)
@@ -435,7 +436,9 @@ data_pupilAve = aggregate( PDR ~ sub*vField*SOA, data = data_pupil, FUN = "mean"
 data_pupilAve = aggregate( PDR ~ sub*vField, data = data_pupil, FUN = "mean")
 
 ### trial at more than 3000ms is rejected
-data_RT_anova = ind_data[ind_data$RT > 0 & ind_data$RT < 3000,]
+data_RT_anova = ind_data
+data_RT_anova = data_RT_anova[data_RT_anova$RT > 0 & data_RT_anova$RT < 3000,]
+
 data_RT_anova =  aggregate( RT ~ sub*vField, data = data_RT_anova, FUN = "mean")
 
 data_RT_diff = data_RT_anova[data_RT_anova$vField == "RVF",]$RT - data_RT_anova[data_RT_anova$vField == "LVF",]$RT
@@ -496,7 +499,8 @@ config$grCol = NULL
 data_pupil_timeCourse =  aggregate( PDR ~ sub*data_x*vField*SOA, data = data_pupil, FUN = "mean")
 data_pupil_timeCourse =  aggregate( PDR ~ sub*data_x*vField, data = data_pupil_timeCourse, FUN = "mean")
 
-data_RT_ave = ind_data[ind_data$RT > 0 & ind_data$RT < 3000,]
+data_RT_ave = ind_data
+data_RT_ave = data_RT_ave[data_RT_ave$RT > 0 & data_RT_ave$RT < 3000,]
 data_RT_ave =  aggregate( RT ~ sub*SOA*vField, data = data_RT_ave, FUN = "mean")
 data_RT_ave = aggregate( RT ~ sub*vField, data = data_RT_ave, FUN = 'mean')
 data_RT_ave$vField = "average"
@@ -754,9 +758,6 @@ p = p +
     axis.text.x = element_text(angle = 30, hjust = 1)
   )
 
-
-
-
 # Time-course of pupillary response (LVF vs. RVF) --------------------------------------------------
 config$grCol = c("#D97168","#738CD9")
 data_pupil_timeCourse =  aggregate( PDR ~ sub*data_x*vField, data = data_pupil, FUN = "mean")
@@ -986,12 +987,12 @@ tmp_plot =  aggregate( PDR ~ sub*data_x, data = data_pupil, FUN = "mean")
 
 p <- ggplot(tmp_plot,aes(x=data_x, y=PDR, group=interaction(sub)),color="blue")+
   geom_line(color="black")+
-  geom_point(data=minLatency,aes(x=min,y=ave_min_y),alpha=0.5,size=2,color="red")+
-  geom_point(data=minLatency,aes(x=max,y=ave_max_y),alpha=0.5,size=2,color="blue")+
+  geom_point(data=minLatency,aes(x=min,y=ave_min_y),alpha=0.5,size=2,shape=16,color="red")+
+  geom_point(data=minLatency,aes(x=max,y=ave_max_y),alpha=0.5,size=2,shape=16,color="blue")+
   xlab("Time [sec]")+
-  ylab(paste0("Pupil size",unitName))+
+  ylab(paste0("Pupil size",unitName))
   # geom_hline(data=data_auc[data_auc$comp == "Late",],aes(yintercept=minVal), color="gray50", linetype="solid")+
-  geom_hline(yintercept=0, color="black", linetype="solid")
+  # geom_hline(yintercept=0, color="black", linetype="solid")+
   # facet_wrap(sub~.)
 
 config$xlim = c(sTime,round(seq(0,3.5,0.5),4))
@@ -1354,6 +1355,9 @@ tmp_plot$gazeBias = tmp_data_gaze$x
 tmp_plot$pse = dat_th_ind$th
 tmp_plot$RT = tmp_data_RT$RT
 
+p=ggplot(tmp_plot)+
+  geom_point(aes(x=PDR_res,y=pse))
+
 for(mmName1 in names(tmp_plot[3:length(tmp_plot)])){
   eval(parse(text=paste0("tmp_plot[tmp_plot$vField == 'LVF',]$",mmName1, 
                          " = tmp_plot[tmp_plot$vField == 'LVF',]$",mmName1,
@@ -1362,37 +1366,53 @@ for(mmName1 in names(tmp_plot[3:length(tmp_plot)])){
 
 tmp_plot = tmp_plot[tmp_plot$vField == 'LVF',]
 
-library(tidyverse)
+
 tmp_plot$sub = NULL
 tmp_plot$vField = NULL
 
-
+#### make corr matrix
 cormat <- cor(tmp_plot, method = "spearman")
 cormat = round(cormat,4)
 
-cormat[upper.tri(cormat)] = "-"
 
-cormat_melt <- cor(tmp_plot, method = "spearman") %>% melt()
+cormat_melt <- as.data.frame(cor(tmp_plot, method = "spearman")) %>% rownames_to_column(var="ID1") 
+cormat_melt = gather(cormat_melt,key=ID2,value=value,PDR_res:RT)
 
 tmp = cor(tmp_plot, method = "spearman")
 tmp[upper.tri(tmp)] = NA 
 cormat_melt$na = melt(tmp)$value
 
 tmp = NULL
+tx = NULL
 for(mmName1 in names(tmp_plot)){
   for(mmName2 in names(tmp_plot)){
+    
     a = eval(parse(text=paste0("cor.test(tmp_plot$",mmName1, ", tmp_plot$", mmName2,", method = 'spearman')")))
+    
     tmp = rbind(tmp,a$p.value)
-  }  
+    if(a$p.value < 0.05){
+      tx = rbind(tx,paste0(round(a$p.value,4),"*"))
+      cormat[mmName1,mmName2] = paste0(cormat[mmName1,mmName2],"*")
+    }else if(a$p.value > 0.05 & a$p.value < 0.1){
+      tx = rbind(tx,paste0(round(a$p.value,4),"+"))
+      cormat[mmName1,mmName2] = paste0(cormat[mmName1,mmName2],"+")
+    }else{
+      tx = rbind(tx,round(a$p.value,4))
+      cormat[mmName1,mmName2] = cormat[mmName1,mmName2]
+    }
+  }
 }
+
+cormat[upper.tri(cormat)] = "-"
+
 cormat_melt$pVal = tmp
-  
-p_all$corrMat = ggplot(data = cormat_melt, aes(x = X1, y = X2, fill = value)) + 
-  # ggplot(data = cormat_melt, aes(x = Var1, y = Var2, fill = value)) + 
+cormat_melt$tx = tx
+
+p_all$corrMat = ggplot(data = cormat_melt, aes(x = ID1, y = ID2, fill = value)) +
   geom_tile() +
-  geom_text(aes(label = round(value, 2)), position=position_nudge(y=0.2), size=0.5, colour="grey20") +
+  geom_text(aes(label = tx), position=position_nudge(y=0.2), size=3, colour="grey20") +
   geom_text(aes(label = paste0("(",round(pVal, 4),")")), position=position_nudge(y=-0.2), 
-            colour="grey20", size=0.5) +
+            colour="grey20", size=3) +
   scale_fill_gradient2(low = "blue", mid = "white", high = "red", midpoint = 0)+
    theme(
     aspect.ratio=1
@@ -1475,6 +1495,15 @@ p_all$blink = setEmptyStyle(p_all$blink,config)+
 ```
 
 \newpage
+
+
+<!-- ```{r, message=FALSE, echo=FALSE, warning=FALSE} -->
+<!-- mmName = names(p_all) -->
+<!-- for(iFig in 1:length(mmName)){ -->
+<!--   eval(parse(text=paste0("print(p_all[[",iFig,"]])"))) -->
+<!-- } -->
+
+<!-- ``` -->
 
 ```{r, message=FALSE, echo=FALSE, warning=FALSE,include=FALSE}
 if(saveFig){

@@ -20,6 +20,7 @@ for(ivField in c("LVF","RVF")){
     dat[[iName]] = unlist(dat[[iName]])
   }
   dat$numOfTrial = 1:length(dat$sub)
+  
   # pupil ---------------------------------------------------------------
   dataVF = makePupilDataset(dat,
                             c("PDR","zeroArray"),
@@ -123,7 +124,13 @@ data_pupilAll_res[data_pupilAll_res$vField == "RVF",]$Task = 1 - data_pupilAll_r
 
 #### RT correction in each SOA 
 ind_data$RT = ind_data$RT + 250 - ind_data$SOA
+data_pupilAll_res$RT = data_pupilAll_res$RT + 250 - data_pupilAll_res$SOA
 data_pupilAll$RT = data_pupilAll$RT + 250 - data_pupilAll$SOA
+
+# ind_data = ind_data[ind_data$RT > 0 & ind_data$RT < 3000,]
+# data_pupilAll_res = data_pupilAll_res[data_pupilAll_res$RT > 0 & data_pupilAll_res$RT < 3000,]
+# data_pupilAll = data_pupilAll[data_pupilAll$RT > 0 & data_pupilAll$RT < 3000,]
+
 
 # task data load --------------------------------------------------------------------
 
@@ -158,8 +165,14 @@ for(iName in 1:length(data_task)){
   data_task[[iName]] = unlist(data_task[[iName]])
 }
 
+#### Task data without rejection due to papillary response
 ind_task_data = as.data.frame(data_task)
+
+#### RT correction in each SOA 
 ind_task_data$RT = ind_task_data$RT + 250 - data_task$SOA
+
+#### RT > 3000 would be rejected
+# ind_task_data = ind_task_data[ind_task_data$RT > 0 & ind_task_data$RT < 3000,]
 
 ind_task_data[ind_task_data$vField == "RVF",]$Task = 1 - ind_task_data[ind_task_data$vField == "RVF",]$Task
 
@@ -174,9 +187,13 @@ for(ivField in unique(ind_data$vField)){
   }
 }
 
+####################
+# ind_task_data = ind_data
+####################
+
 # aggregation -------------------------------------------------------------
 data_e1 = aggregate( . ~ sub*SOA*vField, data = ind_data, FUN = "mean")
-data_task = ind_data
+# data_task = ind_data
 data_pupil = aggregate( . ~ sub*data_x*SOA*vField, data = data_pupilAll, FUN = "mean")
 data_pupil_res = aggregate( . ~ sub*data_x*SOA*vField, data = data_pupilAll_res, FUN = "mean")
 
@@ -327,25 +344,25 @@ save(ind_data,
      file = paste0(dataFolder,"dataset_task",normName,".rda"))
 
 # PSE(average) ---------------------------------------------------------
-tmp = ind_task_data
-tmp$sub = NULL
-tmp$n = 1
-tmp = aggregate( . ~ SOA*vField, data = tmp, FUN = "sum")
-fit_VFs = quickpsy(tmp, SOA, Task, n, grouping = c("vField"), B = 2000)
-
-psyCurves = data.frame(
-  sub = "Average",
-  vField = fit_VFs$curves$vField,
-  x = fit_VFs$curves$x,
-  y = fit_VFs$curves$y
-)
-
-dat_th = data.frame(
-  sub = "Average",
-  vField = fit_VFs$thresholds$vField,
-  th = fit_VFs$thresholds$thre
-)
-
-save(fit_vField_sub,fit_VFs,
-     psyCurves,dat_th,
-     file = paste0(dataFolder,"dataset_task_bootstrap.rda"))
+# tmp = ind_task_data
+# tmp$sub = NULL
+# tmp$n = 1
+# tmp = aggregate( . ~ SOA*vField, data = tmp, FUN = "sum")
+# fit_VFs = quickpsy(tmp, SOA, Task, n, grouping = c("vField"), B = 2000)
+# 
+# psyCurves = data.frame(
+#   sub = "Average",
+#   vField = fit_VFs$curves$vField,
+#   x = fit_VFs$curves$x,
+#   y = fit_VFs$curves$y
+# )
+# 
+# dat_th = data.frame(
+#   sub = "Average",
+#   vField = fit_VFs$thresholds$vField,
+#   th = fit_VFs$thresholds$thre
+# )
+# 
+# save(fit_vField_sub,fit_VFs,
+#      psyCurves,dat_th,
+#      file = paste0(dataFolder,"dataset_task_bootstrap.rda"))
