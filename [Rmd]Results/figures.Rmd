@@ -1355,9 +1355,6 @@ tmp_plot$gazeBias = tmp_data_gaze$x
 tmp_plot$pse = dat_th_ind$th
 tmp_plot$RT = tmp_data_RT$RT
 
-p=ggplot(tmp_plot)+
-  geom_point(aes(x=PDR_res,y=pse))
-
 for(mmName1 in names(tmp_plot[3:length(tmp_plot)])){
   eval(parse(text=paste0("tmp_plot[tmp_plot$vField == 'LVF',]$",mmName1, 
                          " = tmp_plot[tmp_plot$vField == 'LVF',]$",mmName1,
@@ -1369,6 +1366,12 @@ tmp_plot = tmp_plot[tmp_plot$vField == 'LVF',]
 
 tmp_plot$sub = NULL
 tmp_plot$vField = NULL
+
+tmp_plot0 = gather(tmp_plot,key=ID2,value=value,PDR_res:RT)
+
+p=ggplot(tmp_plot,aes(group=))+
+  geom_point(aes(x=PDR_res,y=pse))
+
 
 #### make corr matrix
 cormat <- cor(tmp_plot, method = "spearman")
