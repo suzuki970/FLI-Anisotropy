@@ -1231,7 +1231,7 @@ if(normFlg){
 
 p = setEmptyStyle(p,config)
 
-p_all$BPVFs = p
+p_all$BPVFs = p 
 p_all$BPVFs$size = c(3,5)
 
 tonic_table = list(list(
