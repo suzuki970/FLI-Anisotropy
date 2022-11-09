@@ -130,7 +130,9 @@ for ivField in ["LVF","RVF"]:
    
     #%% ------------------ baseline ----------------------------------------------
    
-    y_bp = np.array(dat["PDR"])[:,getNearestValue(x,-0.5):getNearestValue(x,0)].mean(axis=1)
+    y_bp = np.array(dat["PDR"])[:,getNearestValue(x,cfg["WID_BASELINE"][0]):getNearestValue(x,cfg["WID_BASELINE"][1])].mean(axis=1)
+    
+    
     
     dat["Baseline"] = y_bp.tolist()
     

@@ -1220,8 +1220,8 @@ config$xlim = round(seq(1,2,1),4)
 config$xlim_stride = 0.5
 
 if(normFlg){
-  p <- drawSignificance(p,sigPair,-0.03,0.05,nsFlag)
-  config$ylim = round(seq(-0.15,-0.1,0.01),4)
+  p <- drawSignificance(p,sigPair,0.01,0.05,nsFlag)
+  config$ylim = round(seq(-0.08,0.02,0.02),4)
   config$ylim_stride = 0.005
 }else{
   p <- drawSignificance(p,sigPair,4.95,0.05,nsFlag)
@@ -1369,8 +1369,8 @@ tmp_plot$vField = NULL
 
 tmp_plot0 = gather(tmp_plot,key=ID2,value=value,PDR_res:RT)
 
-p=ggplot(tmp_plot,aes(group=))+
-  geom_point(aes(x=PDR_res,y=pse))
+# p=ggplot(tmp_plot,aes(group=))+
+#   geom_point(aes(x=PDR_res,y=pse))
 
 
 #### make corr matrix
