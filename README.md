@@ -1,11 +1,9 @@
-# Experimental data for *"Anisotropy in the peripheral visual field based on pupil response to the glare illusion"*
+# Experimental data for *"The lateralized flash-lag illusion: A psychophysical and pupillometry study"*
 Copyright 2022 Yuta Suzuki
 
 
 ### Article information
-Istiqomah, N., Suzuki, Y., Kinzuka, Y., Minami, T. & Nakauchi, S. Anisotropy in the peripheral visual field based on pupil response to the glare illusion. Heliyon e09772 (2022) [doi:10.1016/j.heliyon.2022.e09772].
-
-[doi:10.1016/j.heliyon.2022.e09772]: https://doi.org/10.1016/j.heliyon.2022.e09772
+Yuta Suzuki*, Sumeyya Atmaca, Bruno Laeng. The lateralized flash-lag illusion: A psychophysical and pupillometry study, in review.
 
 ## Requirements
 Python
@@ -36,12 +34,7 @@ raw data can be found at **'[Python]PreProcessing/results'**
 
 	- Pre- processed data is saved as **‘data_original.json’**
 
-- Artifact rejection and data epoch are performed by **'[Python]PreProcessing/dataAnalysis.py'**
-
-```
->> python parseData.py	
->> python dataAnalysis.py
-```
+- Artifact rejection and data epoch are performed by **'[Python]PreProcessing/dataAnalysis_eyeMetrics.py'** and **'[Python]PreProcessing/dataAnalysis_task.py'**
 
 
 ## Figure and statistics
